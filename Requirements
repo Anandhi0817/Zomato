@@ -1,3 +1,10 @@
 !pip install plotly
 !pip install pandas
 !pip install streamlit 
+
+!Python 3.x
+!Jupyter Notebooks
+!Pandas
+!Matplotlib
+!Seaborn
+!NumPy
