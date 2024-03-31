@@ -1,4 +1,7 @@
 # Importing libraries
+!pip install plotly
+!pip install pandas
+!pip install streamlit 
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
