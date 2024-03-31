@@ -1,6 +1,6 @@
-!pip install plotly 
-!pip install pandas
-!pip install streamlit 
+pip install plotly 
+pip install pandas
+pip install streamlit 
 
 !Python 3.x
 !Jupyter Notebooks
