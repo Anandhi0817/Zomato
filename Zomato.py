@@ -1,22 +1,20 @@
+#importing 
 import plotly.graph_objects as go
-import plotly.express as px
-import dash
-from dash import dcc, html, Input, Output
-import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
+import plotly.express as px
 import streamlit as st
+import pandas as pd
 
 # Reading the two datasets for basic information
-zomato_data = pd.read_csv('Desktop/Zomato/zomato.csv')
+zomato_data = pd.read_csv(r'C:\Users\SHALINI\Desktop\Zomato\zomato.csv')
 zomato_data.info()
 
-zomato_country_data = pd.read_csv('Desktop/Zomato/Country-Code.csv')
+zomato_country_data = pd.read_csv(r'C:\Users\SHALINI\Desktop\Zomato\Country-Code.csv')
 zomato_country_data.info()
 
 #Merging the two datasets together
-zomato_data = pd.read_csv('Desktop/Zomato/zomato.csv')
-zomato_country_data = pd.read_csv('Desktop/Zomato/Country-Code.csv')
+zomato_data = pd.read_csv(r'C:\Users\SHALINI\Desktop\Zomato\zomato.csv')
+zomato_country_data = pd.read_csv(r'C:\Users\SHALINI\Desktop\Zomato\Country-Code.csv')
 
 # Merge DataFrames
 merged_df = pd.merge(zomato_data, zomato_country_data, how='left', on='Country Code')
@@ -46,24 +44,56 @@ print(cuisine_counts)
 print(exploded_df.head())
 print(exploded_df.info())
 
-#Saving the new dataframe in an updated file
-exploded_df.info()
-exploded_df.to_csv('Desktop/Zomato/zomato_data_updated.csv')
-
 #Exploratory Data Analysis (EDA) #Numerical EDA
 #Displaying basic statistics of the columns
-df = pd.read_csv('Desktop/Zomato/zomato_data_updated.csv')
+df = pd.read_csv(r'C:\Users\SHALINI\Desktop\Zomato\zomato_data_updated.csv')
 
-# Display basic statistics of the numerical columns
+# statistics of the numerical columns
 print(df.describe())
 
-# Display information about the dataset
+#information about the dataset
 print(df.info())
 
+#Plot comparing Indian currency with other country's currency
+# Specify the columns you want to include in correlation analysis
+selected_columns = ['Aggregate rating','Price range', 'Converted Cost (INR)', 'Average Cost for two']
+
+# Select only the specified columns
+selected_data = df[selected_columns]
+
+# Calculate the correlation matrix
+correlation_matrix = selected_data.corr()
+
+# Plot the heatmap
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm')
+plt.title('Comparison of Indian Rupees with Other Currencies')
+plt.show()
+
+# Filter the DataFrame to include only restaurants in India
+df_india = df[df['Country'] == 'India']
+
+# Calculate the average cost for each cuisine in India
+avg_cost_per_cuisine = df_india.groupby('Cuisines')['Average Cost for two'].mean().reset_index()
+
+# Sort cuisines by average cost in descending order to find the top costly cuisines
+top_costly_cuisines = avg_cost_per_cuisine.sort_values(by='Average Cost for two', ascending=False)
+
+# Select only the top N cuisines (adjust N as needed)
+N = 10  # for example, select top 10 costly cuisines
+top_N_costly_cuisines = top_costly_cuisines.head(N)
+
+#Find which cuisines are costly in India
+df_top_N_costly_cuisines = df_india[df_india['Cuisines'].isin(top_N_costly_cuisines['Cuisines'])]
+# Create a Sunburst chart
+fig = px.sunburst(df_top_N_costly_cuisines, path=['Country', 'City', 'Cuisines'], 
+                  title='Top {} Costly Cuisines in India'.format(N))
+fig.update_layout(width=800, height=600)
+fig.show()
 
 # Reading the dataframe
-df1 = pd.read_csv('Desktop/Zomato/zomato_data_updated.csv')
+df1 = pd.read_csv(r'C:\Users\SHALINI\Desktop\Zomato\zomato_data_updated.csv')
 df = df1[df1['Country'] == 'India']
+city_df = df[df['City'] == 'selected_city']
 
 # Streamlit part
 st.markdown("<h1 style='text-align: center; color: Brown; font-size: 25px; font-family: Arial, sans-serif;'>Zomato Data Analysis and Visualization</h1>", unsafe_allow_html=True)
@@ -78,7 +108,7 @@ if selected == "Home":
     # Footer with image
     st.markdown('<div class="icon-container"><img src="/content/5.png" width="60"></div>', unsafe_allow_html=True)
     st.markdown("---")
-    st.write("© 2024 BizCardX. All rights reserved.")
+    st.write("© 2024 Zomato. All rights reserved.")
 
 if selected == "Data Analysis and Visualization":
     tab1, tab2 = st.tabs(["Country based data analysis","City comparison in India"])
@@ -99,26 +129,43 @@ if selected == "Data Analysis and Visualization":
             st.plotly_chart(px.box(filtered_df_1, x='Restaurant Name', y='Aggregate rating', title='Ratings Analysis'))
         if selected == "The most costly cuisine":
             most_costly_cuisine = filtered_df_1.groupby('Cuisines')['Converted Cost (INR)'].mean().idxmax()
-            st.markdown(f'<div style="text-align:center;"><b>The most costly cuisine in {selected_country} is "{most_costly_cuisine}"</b></div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="text-align:center;"><b>The most costly cuisine in {selected_country_1} is "{most_costly_cuisine}"</b></div>', unsafe_allow_html=True)
     with tab2:
         st.markdown("City comparison in India")
-        # Report 1: Comparison Between Cities in India
-        fig_cities = px.sunburst(df.groupby(['City', 'Has Online delivery']).size().reset_index(),
-                                 path=['City', 'Has Online delivery'], values=0,
-                                 title='Number of Restaurants per City')
-        fig_cities.update_layout(width=800, height=600)
-        st.plotly_chart(fig_cities)
-    
+        selected_city = st.selectbox("Select City", df['City'].unique())
+        city_df = df[df['City'] == selected_city]
+        selected = st.selectbox("Selected", ["City comparison", "Online Delivery vs Dine-In", "Living Cost vs Low Living Cost"])
+
+        if selected == "City comparison":
+            # Report 1: Comparison Between Cities in India
+            st.markdown(f"## City comparison in {selected_city}")
+            fig_city = px.scatter(city_df, x='City', y='Average Cost for two', color='Has Online delivery',
+                                  title=f'Average Cost for Two in {selected_city} by Delivery Service')
+            st.plotly_chart(fig_city)
+            st.markdown(f"## City-wise Restaurant Count for {selected_city}")  # City-wise data table
+            st.write(city_df.groupby(['City', 'Has Online delivery']).size().reset_index().rename(columns={0: 'Count'}))
+        
         # Report 2: Part of India Spends More on Online Delivery vs Dine-In 
-        spending_data = df.groupby(['City', 'Has Online delivery'])['Average Cost for two'].mean().reset_index()
+        if selected == "Online Delivery vs Dine-In":
+            currency = '₹'
+            st.markdown(f"## Spending Patterns for {selected_city}")
+            fig_spending_patterns = px.pie(city_df, names='Has Online delivery', values='Average Cost for two', 
+                                           title=f'Spending Patterns: Online Delivery vs Dine-In in {selected_city}',
+                                           labels={'Has Online delivery': 'Service Type', 'Average Cost for two': 'Average Cost'})
+            st.plotly_chart(fig_spending_patterns)
+            st.markdown(f"## City-wise Data for {selected_city}")
+            city_wise_data = city_df.groupby(['Has Online delivery'])['Average Cost for two'].mean().reset_index()
+            city_wise_data['Average Cost for two'] = city_wise_data['Average Cost for two'].map(lambda x: f'{currency} {x:.2f}')
+            st.write(city_wise_data)
         
-        fig_spending_patterns = px.bar(spending_data, x='City', y='Average Cost for two', color='Has Online delivery',
-                                       title='Spending Patterns: Online Delivery vs Dine-In across Cities in India')
-        st.plotly_chart(fig_spending_patterns)
-    
         # Report 3: Part of India Has a High Living Cost vs Low Living Cost 
-        living_cost_data = df.groupby('City')['Average Cost for two'].mean().reset_index()
-        
-        fig_living_cost = px.box(living_cost_data, x='City', y='Average Cost for two',
-                                 title='Average Living Cost across Cities in India')
-        st.plotly_chart(fig_living_cost)
+        if selected == "Living Cost vs Low Living Cost":
+            currency = '₹'
+            st.markdown(f"## Average Living Cost across Cities in India ({currency})")
+            fig_living_cost = px.box(city_df, x='City', y='Average Cost for two',
+                                     title=f'Average Living Cost across Cities in India ({currency})')
+            st.plotly_chart(fig_living_cost)
+            st.markdown(f"## City-wise Data for Living Cost in {selected_city}")
+            city_wise_data = city_df.groupby(['City'])['Average Cost for two'].mean().reset_index()
+            city_wise_data['Average Cost for two'] = city_wise_data['Average Cost for two'].map(lambda x: f'{currency} {x:.2f}')
+            st.write(city_wise_data)
